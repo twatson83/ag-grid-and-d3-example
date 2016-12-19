@@ -1,4 +1,9 @@
 {
   "presets": ["es2015", "stage-1", "react"],
-  "plugins": []
+  "plugins": [
+    "transform-object-assign",
+    "add-module-exports",
+    "syntax-async-functions",
+    "array-includes",
+    "transform-runtime"]
 }

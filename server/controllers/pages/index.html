@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf8"/>
+</head>
+<style>
+    body {
+        background-color: #666666;
+        color: rgb(224, 224, 224) !important;
+    }
+    input {
+        background-color: #626262 !important;
+        color: rgb(224, 224, 224) !important;
+        border-color: #808080;
+    }
+    button {
+        background-color: #626262 !important;
+        color: rgb(224, 224, 224) !important;
+        border-color: #808080;
+    }
+    .ag-dark {
+        font-size: 10px !important;
+    }
+
+    .chart text {
+        fill: white;
+        font: 10px sans-serif;
+        text-anchor: middle;
+    }
+    .xaxis line, .xaxis path, .yaxis line, .yaxis path{
+        stroke: rgb(204, 204, 204);
+        shape-rendering: crispEdges;
+    }
+    .xaxis text, .yaxis text{
+        fill: rgb(204, 204, 204);
+        font: 10px sans-serif;
+    }
+    .line {
+        stroke-width: 1px;
+    }
+
+    .overlay {
+        fill: none;
+        stroke: none;
+        pointer-events: all;
+        mouse-events: all;
+    }
+
+    .focusLine {
+        stroke: rgb(137, 137, 137);
+        shape-rendering: crispEdges;
+    }
+
+    .bar.green {
+        fill: #333;
+        stroke: rgb(73,192,67);
+        shape-rendering: crispEdges;
+    }
+
+    .bar.red {
+        fill: #CC1414;
+        stroke:  red ;
+        shape-rendering: crispEdges;
+    }
+
+    .bar.green:hover {
+        fill: darkgreen ;
+    }
+
+    .bar.red:hover {
+        fill: red;
+    }
+
+    .line.green {
+        stroke: rgb(73,192,67);
+        shape-rendering: crispEdges;
+    }
+
+    .line.red {
+        stroke:  red ;
+        shape-rendering: crispEdges;
+    }
+
+    .d3-tip {
+        line-height: 1;
+        padding: 5px;
+        background: rgba(0, 0, 0, 0.8);
+        font-size: 10px !important;
+        border-radius: 2px;
+    }
+
+    .tt-title {
+        display: inline-block;
+        font-weight: bold;
+        width: 40px;
+    }
+
+    .tt-line {
+        padding: 2px;
+    }
+
+    .zoomOut {
+        fill: #66a;
+        cursor: pointer;
+    }
+    .zoomOutText {
+        pointer-events: none;
+        fill : #ccc;
+    }
+
+
+</style>
+<body style="background-color: #333">
+    <div id="app">
+    </div>
+    <script src="/bundle.js"></script>
+</body>
+</html>

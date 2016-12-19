@@ -1,13 +1,10 @@
 import React from 'react';
-import "bootstrap/dist/css/bootstrap.css";
-import "bootstrap/dist/js/bootstrap";
-import {client} from "./api";
 import {AgGridReact} from 'ag-grid-react';
 import 'ag-grid/dist/styles/ag-grid.css';
 import 'ag-grid/dist/styles/theme-dark.css';
-import io from "socket.io-client";
+import { registerNewPriceHandler, registerTicker, removeTicker, getStocks, requestPrice } from "../apis/finance";
 
-export default class Table extends React.Component {
+export default class StockList extends React.Component {
   constructor(props){
     super(props);
 
@@ -15,10 +12,9 @@ export default class Table extends React.Component {
     this._onGridReady = this._onGridReady.bind(this);
     this._priceChangeRenderer = this._priceChangeRenderer.bind(this);
 
-    this.visibleNodes = {};
+    registerNewPriceHandler(this._updatePrices);
 
-    this.socket = io();
-    this.socket.on("new-prices", this._updatePrices);
+    this.visibleNodes = {};
 
     this.state = {
       columnDefs: [
@@ -29,33 +25,32 @@ export default class Table extends React.Component {
         {headerName: "MarketCap", field: "MarketCap"},
         {headerName: "PE", field: "PE"},
         {headerName: "DividendYield", field: "DividendYield"},
-        {headerName: "CurrentPrice", field: "CurrentPrice",
-          cellRenderer: this._priceChangeRenderer}
+        {headerName: "CurrentPrice", field: "CurrentPrice", cellRenderer: this._priceChangeRenderer}
       ],
       rows: []
     };
+
   }
 
-  componentDidMount(){
-    client.default.getStockList({}, results => {
+  componentDidMount() {
+    getStocks("LON").then(results =>
       this.setState({
-        rows: results.obj
-      });
-    });
-
+        rows: results
+      }));
   }
 
-  _updatePrices(results){
-    Object.keys(results).forEach(k => {
-      if (this.visibleNodes[k]){
-        this.visibleNodes[k].setDataValue("CurrentPrice", results[k]);
+  _updatePrices(results) {
+    results = results instanceof Array ? results : [results];
+    results.forEach(r => {
+      if (this.visibleNodes[r.symbol]){
+        this.visibleNodes[r.symbol].setDataValue("CurrentPrice", r.LastTradePriceOnly);
       }
     });
   }
 
   render() {
     return (
-      <div style={{position: "absolute", bottom: "0", top: "0", right: "0", left: "0"}} className="ag-dark">
+      <div style={{position: "absolute", bottom: "0", top: "320px", right: "0", left: "0"}} className="ag-dark">
         <AgGridReact
           columnDefs={this.state.columnDefs}
           rowData={this.state.rows}
@@ -77,11 +72,14 @@ export default class Table extends React.Component {
       this.visibleNodes[params.data.ticker] = params.node;
 
       params.addRenderedRowListener('renderedRowRemoved', () => {
-        this.socket.emit("removeTicker", params.data.ticker);
+        removeTicker(params.data.ticker);
         delete this.visibleNodes[params.data.ticker];
       });
 
-      this.socket.emit("addTicker", params.data.ticker);
+      // Register ticker server side.
+      registerTicker(params.data.ticker);
+
+      requestPrice(params.data.ticker);
     }
 
     return params.value === undefined ? "" : params.value;

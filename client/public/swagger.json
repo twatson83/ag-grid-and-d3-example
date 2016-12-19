@@ -1,0 +1,199 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "Finance API",
+    "version": "1.0.0",
+    "title": "Finance API"
+  },
+  "schemes": [
+    "http"
+  ],
+  "paths": {
+    "\/api/prices": {
+      "get": {
+        "summary": "Price List",
+        "operationId": "getPrices",
+        "produces": [
+          "application\/json"
+        ],
+        "parameters": [{
+          "name": "symbols",
+          "in": "query",
+          "required": true,
+          "type": "string"
+        }],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#\/definitions\/Stock"
+              }
+            }
+          },
+          "500": {
+            "description": "Server Error"
+          }
+        }
+      }
+    },
+    "\/api/prices/historical": {
+      "get": {
+        "summary": "Get historical price list",
+        "operationId": "getHistoricalPrices",
+        "produces": [
+          "application\/json"
+        ],
+        "parameters": [{
+          "in": "query",
+          "name": "symbol",
+          "required": true,
+          "type": "string"
+        }, {
+          "in": "query",
+          "name": "start",
+          "required": true,
+          "type": "string"
+        }, {
+          "in": "query",
+          "name": "end",
+          "required": true,
+          "type": "string"
+        }],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#\/definitions\/HistoricalPrice"
+              }
+            }
+          },
+          "500": {
+            "description": "Server Error"
+          }
+        }
+      }
+    },
+    "\/api/stocks": {
+      "get": {
+        "summary": "Get historical price list",
+        "operationId": "getStocks",
+        "produces": [
+          "application\/json"
+        ],
+        "parameters": [{
+          "in": "query",
+          "name": "exchange",
+          "required": true,
+          "type": "string"
+        }],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#\/definitions\/Stock"
+              }
+            }
+          },
+          "500": {
+            "description": "Server Error"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Price": {
+      "type": "object",
+      "properties": {
+        "Symbol": {
+          "type": "string"
+        },
+        "AverageDailyVolume": {
+          "type": "integer"
+        },
+        "Change": {
+          "type": "number"
+        },
+        "MarketCapitalization": {
+          "type": "string"
+        },
+        "LastTradePriceOnly": {
+          "type": "number"
+        },
+        "Name": {
+          "type": "string"
+        },
+        "Volume": {
+          "type": "integer"
+        },
+        "StockExchange": {
+          "type": "number"
+        }
+      }
+    },
+    "HistoricalPrice": {
+      "type": "object",
+      "properties": {
+        "Symbol": {
+          "type": "string"
+        },
+        "Date": {
+          "type": "string"
+        },
+        "Open": {
+          "type": "number"
+        },
+        "High": {
+          "type": "number"
+        },
+        "Low": {
+          "type": "number"
+        },
+        "Close": {
+          "type": "number"
+        },
+        "Volume": {
+          "type": "integer"
+        },
+        "Adj_Close": {
+          "type": "number"
+        }
+      }
+    },
+    "Stock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "ticker": {
+          "type": "string"
+        },
+        "currency": {
+          "type": "string"
+        },
+        "MarketCap": {
+          "type": "string"
+        },
+        "PE": {
+          "type": "string"
+        },
+        "DividendYield": {
+          "type": "string"
+        },
+        "Price52WeekPercChange": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
