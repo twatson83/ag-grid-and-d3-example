@@ -1,6 +1,6 @@
 # D3 and ag-grid Example
 
-Sample app that displays a stock list using Google's finance API and shows up to date pricesfrom Yahoo's finance API.  A candlestick chart also shows historic prices using Yahoo's finance API.
+Sample app that displays a stock list using Google's finance API and shows realtime prices from Yahoo's finance API.  A candlestick chart also shows historic prices using Yahoo's finance API.
 
 The following frameworks and libraries were used.
 * ag-grid
@@ -23,7 +23,7 @@ The following frameworks and libraries were used.
 ![Image of candlestick chart created using D3](https://github.com/twatson83/ag-grid-and-d3-example/blob/master/images/candlestick.gif)
 
 ### Performance testing
-Updating prices every 200ms.
+4000 rows, Updating prices of visible rows every 200ms.
 ![Image of prices randomly being updated every 200ms](https://github.com/twatson83/ag-grid-and-d3-example/blob/master/images/grid-perf-test.gif)
 
 Flamechart
