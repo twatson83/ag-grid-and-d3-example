@@ -1,4 +1,4 @@
-# ag-grid and D3 Example
+# D3 and ag-grid Example
 
 Sample app that displays a stock list using Google's finance API and shows up to date pricesfrom Yahoo's finance API.  A candlestick chart also shows historic prices using Yahoo's finance API.
 
