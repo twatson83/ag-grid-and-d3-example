@@ -16,13 +16,13 @@ The following frameworks and libraries were used.
 * Babel
 * ES6
 
-*** ag-grid with realtime updates
+### ag-grid with realtime updates
 ![Image of ag-grid](https://github.com/twatson83/ag-grid-and-d3-example/blob/master/images/grid.gif)
 
-*** D3 candlestick chart
+### D3 candlestick chart
 ![Image of candlestick chart created using D3](https://github.com/twatson83/ag-grid-and-d3-example/blob/master/images/candlestick.gif)
 
-*** Performance testing
+### Performance testing
 Updating prices every 200ms.
 ![Image of prices randomly being updated every 200ms](https://github.com/twatson83/ag-grid-and-d3-example/blob/master/images/grid-perf-test.gif)
 
