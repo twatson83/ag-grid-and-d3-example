@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "NODE_ENV=development nodemon index.js --watch server --watch client",
+    "start": "NODE_ENV=production nodemon index.js --watch server --watch client",
     "start-test": "NODE_ENV=development nodemon index.js --watch server --watch client"
   },
   "author": "",
@@ -47,6 +47,13 @@
     "react-dom": "15.4.1",
     "rxjs": "5.0.1",
     "socket.io": "^1.7.2",
-    "swagger-client": "^2.1.25"
+    "swagger-client": "^2.1.25",
+    "react-datetime": "2.6.0",
+    "react-redux": "4.4.5",
+    "redux": "3.6.0",
+    "redux-immutable-state-invariant": "1.2.4",
+    "redux-logger": "2.7.0",
+    "redux-saga": "0.12.0",
+    "redux-thunk": "2.1.0"
   }
 }

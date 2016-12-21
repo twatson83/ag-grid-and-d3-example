@@ -4,27 +4,32 @@ import Rx from 'rxjs/Rx';
 
 const registeredTickers = {};
 
-function addTicker(ticker, socket){
+function addTicker(ticker, priceSource){
   if(!registeredTickers[ticker]){
-    registeredTickers[ticker] = new Set([socket])
+    registeredTickers[ticker] = new Set([priceSource])
   } else {
-    registeredTickers[ticker].add(socket);
+    registeredTickers[ticker].add(priceSource);
   }
 }
 
-function removeTicker(ticker, socket){
+function removeTicker(ticker, priceSource){
   if(registeredTickers[ticker]
 ){
-    registeredTickers[ticker].delete(socket);
+    registeredTickers[ticker].delete(priceSource);
   }
 }
 
 export default function initSocketServer(server) {
   io(server).on("connection", socket => {
-    socket.on("addTicker",     ticker  => addTicker(ticker, socket));
-    socket.on("addTickers",    tickers => tickers.forEach(t => addTicker(t, socket)));
-    socket.on("removeTicker",  ticker  => removeTicker(ticker, socket));
-    socket.on("removeTickers", tickers => tickers.forEach(t => removeTicker(t, socket)));
+    const newPriceSource = new Rx.Subject();
+    // Batch and send prices to client every 100ms
+    newPriceSource.bufferTime(100)
+                  .subscribe(prices => prices.length > 0 && socket.emit("newPrices", prices));
+
+    socket.on("addTicker",     ticker  => addTicker(ticker, newPriceSource));
+    socket.on("addTickers",    tickers => tickers.forEach(t => addTicker(t, newPriceSource)));
+    socket.on("removeTicker",  ticker  => removeTicker(ticker, newPriceSource));
+    socket.on("removeTickers", tickers => tickers.forEach(t => removeTicker(t, newPriceSource)));
     // todo handle disconnect
   });
 }
@@ -35,7 +40,7 @@ async function getClientPrices(){
 
   if (symbols.length > 0){
     const prices = await getPrices(symbols);
-    prices.forEach(p => registeredTickers[p.symbol].forEach(s => s.emit("newPrice", p)));
+    prices.forEach(p => registeredTickers[p.symbol] && registeredTickers[p.symbol].forEach(s => s.next(p)));
   }
 }
 
@@ -49,10 +54,10 @@ async function getClientPricesTest(){
       LastTradePriceOnly: Math.random()
     }));
 
-    prices.forEach(p => registeredTickers[p.symbol].forEach(s => s.emit("newPrice", p)));
+    prices.forEach(p => registeredTickers[p.symbol].forEach(s => s.next(p)));
   }
 }
 
-setInterval(getClientPricesTest, 100);
+//setInterval(getClientPricesTest, 200);
 
-//setInterval(getClientPrices, 10000);
+setInterval(getClientPrices, 5000);

@@ -2,41 +2,56 @@ import React from 'react';
 import {AgGridReact} from 'ag-grid-react';
 import 'ag-grid/dist/styles/ag-grid.css';
 import 'ag-grid/dist/styles/theme-dark.css';
-import { registerNewPriceHandler, registerTicker, removeTicker, getStocks, requestPrice } from "../apis/finance";
+import { registerNewPriceHandler, registerTicker, removeTicker, requestPrice } from "../api";
 
-export default class StockList extends React.Component {
+export default class StockListTable extends React.Component {
   constructor(props){
     super(props);
 
     this._updatePrices = this._updatePrices.bind(this);
-    this._onGridReady = this._onGridReady.bind(this);
     this._priceChangeRenderer = this._priceChangeRenderer.bind(this);
+    this._nameRenderer = this._nameRenderer.bind(this);
 
-    registerNewPriceHandler(this._updatePrices);
-
-    this.visibleNodes = {};
+    this.visibleNodes = [];
 
     this.state = {
       columnDefs: [
-        {headerName: "Title", field: "title", pinned: true, minWidth: 400},
+        {headerName: "Title", field: "title", pinned: true, minWidth: 400, cellRendererFramework: this._nameRenderer},
         {headerName: "Ticker", field: "ticker"},
         {headerName: "Exchange", field: "exchange"},
         {headerName: "Currency", field: "currency"},
         {headerName: "MarketCap", field: "MarketCap"},
         {headerName: "PE", field: "PE"},
         {headerName: "DividendYield", field: "DividendYield"},
-        {headerName: "CurrentPrice", field: "CurrentPrice", cellRenderer: this._priceChangeRenderer}
-      ],
-      rows: []
+        {headerName: "Price", field: "CurrentPrice", cellRenderer: this._priceChangeRenderer}
+      ]
     };
 
+    registerNewPriceHandler(this._updatePrices);
   }
 
   componentDidMount() {
-    getStocks("LON").then(results =>
-      this.setState({
-        rows: results
-      }));
+    this.props.requestStockList(this.props.exchange);
+  }
+
+  shouldComponentUpdate(nextProps){
+    return nextProps.exchange !== this.props.exchange ||
+           nextProps.stockListRequestStatus !== this.props.stockListRequestStatus;
+  }
+
+  render() {
+    return (
+      <div style={{position: "absolute", bottom: "0", top: "380px", right: "0", left: "0"}} className="ag-dark">
+        <AgGridReact
+          columnDefs={this.state.columnDefs}
+          rowData={this.props.stockList}
+          enableSorting="true"
+          enableFilter="true"
+          rowHeight="20"
+          onGridReady={o => o.api.sizeColumnsToFit()}
+        />
+      </div>
+    )
   }
 
   _updatePrices(results) {
@@ -48,25 +63,7 @@ export default class StockList extends React.Component {
     });
   }
 
-  render() {
-    return (
-      <div style={{position: "absolute", bottom: "0", top: "320px", right: "0", left: "0"}} className="ag-dark">
-        <AgGridReact
-          columnDefs={this.state.columnDefs}
-          rowData={this.state.rows}
-          enableSorting="true"
-          enableFilter="true"
-          rowHeight="20"
-          onGridReady={this._onGridReady}
-        />
-      </div>
-    )
-  }
-
-  _onGridReady(gridOptions){
-    gridOptions.api.sizeColumnsToFit();
-  }
-
+  // Render as raw html.  Much faster than rendering as react component.
   _priceChangeRenderer(params){
     if (this.visibleNodes[params.data.ticker] !== params.node) {
       this.visibleNodes[params.data.ticker] = params.node;
@@ -82,6 +79,22 @@ export default class StockList extends React.Component {
       requestPrice(params.data.ticker);
     }
 
-    return params.value === undefined ? "" : params.value;
+    let style = "";
+    if (params.value < params.data.PrevCurrentPrice){
+       style = "color: red";
+    } else if (params.value > params.data.PrevCurrentPrice) {
+      style = "color: rgb(73,192,67)";
+    }
+
+    params.data.PrevCurrentPrice = params.value;
+
+    return params.value === undefined || params.value === null ? "" : `<span style=\"${style}\">${params.value}</span>`;
+  }
+
+  _nameRenderer(params) {
+    return <a href="#" style={{color: "#6BF"}} onClick={(e) => {
+        e.preventDefault();
+        this.props.selectTicker(params.data.ticker, params.data.title);
+      }} >{params.value}</a>
   }
 }

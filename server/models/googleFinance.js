@@ -15,27 +15,30 @@ export async function stocksByExchange(exchange) {
 
   return new Promise((resolve, reject) => {
     http.request(options, res => {
-
-
-
       let body = '';
       res.setEncoding('utf8');
       res.on('data', d => body += d);
       res.on('end', () => {
-        const results = JSON.parse(body.replace(/\\x/g, ""));
-        let stocks = [];
-        results.searchresults.forEach(s => {
-          let stock = {
-            title: s.title,
-            id: s.id,
-            ticker: s.ticker,
-            currency: s.local_currency_symbol,
-            exchange: s.exchange
-          };
-          s.columns.forEach(c => stock[c.field] = c.value);
-          stocks.push(stock);
-        });
-        resolve(stocks);
+        try {
+          const results = JSON.parse(body.replace(/\\x/g, ""));
+          let stocks = [];
+          if (results.searchresults instanceof Array){
+            results.searchresults.forEach(s => {
+              let stock = {
+                title: s.title,
+                id: s.id,
+                ticker: s.ticker,
+                currency: s.local_currency_symbol,
+                exchange: s.exchange
+              };
+              s.columns.forEach(c => stock[c.field] = c.value);
+              stocks.push(stock);
+            });
+          }
+          resolve(stocks);
+        } catch (e) {
+          reject(e);
+        }
       });
       res.on('error', e => reject)
     }).end();

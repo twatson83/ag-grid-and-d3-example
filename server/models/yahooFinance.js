@@ -1,4 +1,5 @@
 import http from "http";
+import moment from 'moment';
 
 export async function getPrices(symbols) {
   var options = {
@@ -15,7 +16,18 @@ export async function getPrices(symbols) {
       var body = '';
       res.setEncoding('utf8');
       res.on('data', d => body += d);
-      res.on('end', () => resolve(JSON.parse(body).query.results.quote));
+      res.on('end', () => {
+        try{
+          var json = JSON.parse(body);
+          if(json.query && json.query.results && json.query.results.quote){
+            resolve(json.query.results.quote);
+          } else {
+            resolve([])
+          }
+        }catch (e){
+          reject(e);
+        }
+      });
       res.on('error', e => reject)
     }).end();
   });
@@ -27,8 +39,8 @@ export async function getHistoricalPrices(symbol, start, end) {
     port: 80,
     path: encodeURI('/v1/public/yql?q=select * from yahoo.finance.historicaldata  where symbol = "' +
           symbol + '" and startDate = "' +
-          (start.getFullYear() + "-" + (start.getMonth() + 1) + "-" + start.getDay()) + '" and endDate = "' +
-          (end.getFullYear() + "-" + (end.getMonth() + 1) + "-" + end.getDay()) + '"&format=json&env=store://datatables.org/alltableswithkeys&callback=') ,
+          moment(start).format("YYYY-MM-DD") + '" and endDate = "' +
+          moment(end).format("YYYY-MM-DD") + '"&format=json&env=store://datatables.org/alltableswithkeys&callback=') ,
     method: 'GET'
   };
   return new Promise((resolve, reject) => {
@@ -36,7 +48,18 @@ export async function getHistoricalPrices(symbol, start, end) {
       var body = '';
       res.setEncoding('utf8');
       res.on('data', d => body += d);
-      res.on('end', () => resolve(JSON.parse(body).query.results.quote));
+      res.on('end', () => {
+        try{
+          var json = JSON.parse(body);
+          if(json.query && json.query.results && json.query.results.quote){
+            resolve(json.query.results.quote);
+          } else {
+            resolve([])
+          }
+        }catch (e){
+          reject(e);
+        }
+      });
       res.on('error', e => reject)
     }).end();
   });

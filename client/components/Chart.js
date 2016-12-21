@@ -1,178 +1,235 @@
 import React from 'react';
 import * as d3 from "d3";
 import "../d3-tip-v4";
-import { getHistoricalPrices } from "../apis/finance";
-import moment from "moment";
+import moment from 'moment';
 
-export default class Table extends React.Component {
+export default class Chart extends React.PureComponent {
 
   constructor(props){
     super(props);
   }
 
-  componentDidMount(){
-    var margin = {top: 10, right: 20, bottom: 60, left: 30},
-      width = (this.parentDiv.offsetWidth - 20) - margin.left - margin.right,
-      height = 300 - margin.top - margin.bottom;
+  componentDidMount() {
+    this.props.requestHistoricalPrices(
+      this.props.selectedStock.symbol,
+      this.props.start,
+      this.props.end);
+  }
 
-    var y = d3.scaleLinear()
-      .range([height, 0]);
-
-    var mindate = new Date(2016,0,1),
-        maxdate = new Date(2016,3,1);
-
-    var x = d3.scaleTime()
-      .domain([mindate, maxdate])
-      .range([0, width]);
-
-    var chart = d3.select(".chart")
-      .attr("cursor", "none")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    var line = d3.line()
-      .x(function(d) {
-        return x(d.Date);
-      })
-      .y(function(d) {
-        return y(d.High);
-      });
-
-    getHistoricalPrices("YHOO", moment().subtract("years", 1), moment()).then((data)  => {
-
+  componentDidUpdate() {
+    if(this.props.historicalPrices.length > 0){
       // format the data
-      data.forEach(function(d) {
-        d.Date = new Date(d.Date);
+      this.props.historicalPrices.forEach(d => d.Date = new Date(d.Date));
+
+      if(this.chart){
+        this.update(this.props.historicalPrices);
+      } else {
+        this.initChart(this.props.historicalPrices);
+        this.initAxis(this.props.historicalPrices);
+        this.initTooltop(this.props.historicalPrices);
+        this.initCrosshair(this.props.historicalPrices);
+        this.update(this.props.historicalPrices);
+      }
+
+    }
+  }
+
+  componentWillReceiveProps(newProps){
+    if(newProps.selectedStock.symbol !== this.props.selectedStock.symbol){
+      this.props.requestHistoricalPrices(
+        newProps.selectedStock.symbol,
+        newProps.start,
+        newProps.end);
+    }
+  }
+
+  initChart(){
+    this.margin = {top: 10, right: 20, bottom: 60, left: 30};
+    this.width = (this.parentDiv.offsetWidth - 20) - this.margin.left - this.margin.right;
+    this.height = 300 - this.margin.top - this.margin.bottom;
+
+    this.chart = d3.select(".chart")
+      .attr("cursor", "none")
+      .attr("width", this.width + this.margin.left + this.margin.right)
+      .attr("height", this.height + this.margin.top + this.margin.bottom)
+      .append("g")
+      .attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
+  }
+
+  initAxis(data){
+    this.mindate = moment(this.props.start);
+    this.maxdate = moment(this.props.end);
+    this.min = d3.min(data, d => d.Low);
+    this.max = d3.max(data, d => d.High);
+
+    let days = this.maxdate.diff(this.mindate, 'days');
+    if (days < 30){
+      this.ticks = 1;
+    } else {
+      this.ticks = days / 30
+    }
+
+    this.y = d3.scaleLinear().range([this.height, 0]).domain([this.min, this.max]);
+    this.x = d3.scaleTime()
+               .domain([this.mindate, this.maxdate])
+               .range([0, this.width]);
+
+    this.chart.append("g")
+      .attr("class", "xaxis")
+      .attr("transform", "translate(0," + this.height + ")")
+      .call(d3.axisBottom(this.x)
+        .ticks(d3.timeDay.every(this.ticks))
+        .tickFormat(d3.timeFormat("%d/%m/%Y")))
+      .selectAll("text")
+      .style("text-anchor", "end")
+      .attr("dx", "-.8em")
+      .attr("dy", ".15em")
+      .attr("transform", "rotate(-65)");
+
+    this.chart.append("g")
+      .attr("class", "yaxis")
+      .call(d3.axisLeft(this.y))
+      .selectAll("text")
+      .attr("dx", "-1em");
+  }
+
+  initTooltop(){
+    this.tooltip = d3.tip()
+      .attr('class', 'd3-tip')
+      .offset([0, 0])
+      .direction(d => {
+        let data = d.High > d.Low ? [d.High, d.Low] : [d.Low, d.High];
+        let direction = "n";
+        if (this.y(data[0]) - 80 < 0){
+          direction = "s";
+        }
+        return direction;
+      })
+      .html(d => {
+        return "<div class='tt-line'><div class='tt-title'>Date:</div><span>" + moment(d.Date.toISOString()).format("DD/MM/YYYY") + "</span></div>" +
+          "<div class='tt-line'><div class='tt-title'>Open:</div><span>" + d.Open + "</span></div>" +
+          "<div class='tt-line'><div class='tt-title'>Close:</div><span>" + d.Close + "</span></div>" +
+          "<div class='tt-line'><div class='tt-title'>High:</div><span>" + d.High + "</span></div>" +
+          "<div class='tt-line'><div class='tt-title'>Low:</div><span>" + d.Low + "</span></div>";
       });
+    this.chart.call(this.tooltip);
+  }
 
-      data = data.filter(d => d.Date >= mindate && d.Date <= maxdate);
+  initCrosshair(){
+    let focus = this.chart.append("g").style("display", "none");
 
-      var min = d3.min(data, d => d.Low);
-      var max = d3.max(data, d => d.High);
+    focus.append('line')
+      .attr('id', 'focusLineX')
+      .attr('class', 'focusLine');
+    focus.append('line')
+      .attr('id', 'focusLineY')
+      .attr('class', 'focusLine');
 
-      y.domain([min, max]);
+    let lineY = focus.select('#focusLineY');
+    let lineX = focus.select('#focusLineX');
 
-      var tip = d3.tip()
-        .attr('class', 'd3-tip')
-        .offset([0, 0])
-        .direction(d => {
-          var data = d.High > d.Low ? [d.High, d.Low] : [d.Low, d.High];
-          var direction = "n";
-          if (y(data[0]) - 80 < 0){
-            direction = "s";
-          }
+    let minY = this.y(this.min),
+      maxY = this.y(this.max),
+      maxX = this.x(this.maxdate);
 
-          return direction;
-        })
-        .html(function(d) {
-          return "<div class='tt-line'><div class='tt-title'>Open:</div><span>" + d.Open + "</span></div>" +
-            "<div class='tt-line'><div class='tt-title'>Close:</div><span>" + d.Close + "</span></div>" +
-            "<div class='tt-line'><div class='tt-title'>High:</div><span>" + d.High + "</span></div>" +
-            "<div class='tt-line'><div class='tt-title'>Low:</div><span>" + d.Low + "</span></div>";
+    let applyMouseOverEvents = el => {
+      el.on('mouseover', () => { focus.style('display', null); })
+        .on('mouseout', () => { focus.style('display', 'none'); })
+        .on('mousemove', function() {
+          var pos = d3.mouse(this);
+          lineY.attr('x1', pos[0]).attr('y1', minY)
+            .attr('x2', pos[0]).attr('y2', maxY);
+          lineX.attr('x1', 0).attr('y1', pos[1])
+            .attr('x2', maxX).attr('y2', pos[1]);
         });
+    };
 
-      chart.append("g")
-        .attr("class", "xaxis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(d3.axisBottom(x)
-          .ticks(30)
-          .tickFormat(d3.timeFormat("%d/%m/%Y")))
-        .selectAll("text")
-        .style("text-anchor", "end")
-        .attr("dx", "-.8em")
-        .attr("dy", ".15em")
-        .attr("transform", "rotate(-65)");
+    let overlay = this.chart
+      .append('rect')
+      .attr('class', 'overlay')
+      .attr('width', this.width)
+      .attr('height', this.height)
+      .attr("cursor", "none");
 
-      chart.append("g")
-        .attr("class", "yaxis")
-        .call(d3.axisLeft(y))
-        .selectAll("text")
-        .attr("dx", "-1em");
+    applyMouseOverEvents(overlay);
+    applyMouseOverEvents(this.chart);
+  }
 
-      chart.call(tip);
+  update(data){
 
-      var focus = chart.append("g").style("displgetHistoricalPricesay", "none");
+    this.mindate = moment(this.props.start);
+    this.maxdate = moment(this.props.end);
+    this.min = d3.min(data, d => d.Low);
+    this.max = d3.max(data, d => d.High);
 
-      focus.append('line')
-        .attr('id', 'focusLineX')
-        .attr('class', 'focusLine');
-      focus.append('line')
-        .attr('id', 'focusLineY')
-        .attr('class', 'focusLine');
+    let days = this.maxdate.diff(this.mindate, 'days');
+    if (days < 30){
+      this.ticks = 1;
+    } else {
+      this.ticks = days / 30
+    }
 
-      var lineY = focus.select('#focusLineY');
-      var lineX = focus.select('#focusLineX');
+    this.y = d3.scaleLinear().range([this.height, 0]).domain([this.min, this.max]);
+    this.x = d3.scaleTime().domain([this.mindate, this.maxdate]).range([0, this.width]);
 
-      var minY = y(min),
-        maxY = y(max),
-        maxX = x(maxdate);
+    let line = this.chart
+      .selectAll(".line")
+      .data(data);
 
-      var applyMouseOverEvents = el => {
-        el.on('mouseover', function() { focus.style('display', null); })
-          .on('mouseout', function() { focus.style('display', 'none'); })
-          .on('mousemove', function() {
-            lineY
-              .attr('x1', d3.event.pageX-margin.left-10).attr('y1', minY)
-              .attr('x2', d3.event.pageX-margin.left-10).attr('y2', maxY);
+    line.enter()
+      .append("line")
+      .attr("class", d => d.Open > d.Close ? "line red" : "line green")
+      .attr("x1", d => this.x(d.Date))
+      .attr("y1", d => this.y(d.Low))
+      .attr("x2", d => this.x(d.Date))
+      .attr("y2", d => this.y(d.High))
+      .on('mouseover', this.tooltip.show)
+      .on('mouseout', this.tooltip.hide);
 
-            lineX
-              .attr('x1', 0).attr('y1', d3.event.pageY-margin.top-10)
-              .attr('x2', maxX).attr('y2', d3.event.pageY-margin.top-10);
-          });
-      };
+    line.attr("class", d => d.Open > d.Close ? "line red" : "line green")
+      .attr("x1", d => this.x(d.Date) - (this.width/data.length)/4)
+      .attr("y1", d => this.y(d.Low))
+      .attr("x2", d => this.x(d.Date) - (this.width/data.length)/4)
+      .attr("y2", d => this.y(d.High));
 
-      var overlay = chart.append('rect')
-        .attr('class', 'overlay')
-        .attr('width', width)
-        .attr('height', height)
-        .attr("cursor", "none");
+    line.exit().remove();
 
-      applyMouseOverEvents(overlay);
-      applyMouseOverEvents(chart);
+    let bar = this.chart.selectAll(".bar")
+      .data(data);
 
-      chart.selectAll(".line")
-        .data(data)
-        .enter().append("line")
-        .attr("class", d => {
-          return d.Open > d.Close ? "line red" : "line green"
-        })
-        .attr("x1", function(d) {
-          return x(d.Date) - (width/data.length)/4;
-        })
-        .attr("y1", function(d) {
-          return y(d.Low);
-        })
-        .attr("x2", function(d) {
-          return x(d.Date) - (width/data.length)/4;
-        })
-        .attr("y2", function(d) {
-          return y(d.High);
-        })
-        .on('mouseover', tip.show)
-        .on('mouseout', tip.hide);
+    bar.enter()
+      .append("rect").attr("class", d => d.Open > d.Close ? "bar red" : "bar green")
+      .attr("x", d => this.x(d.Date) - ((this.width - 2)/data.length)/4)
+      .attr("y", d => d.Close < d.Open  ? this.y(d.Open) : this.y(d.Close))
+      .attr("width", 0.5 * (this.width - 2)/data.length)
+      .attr("height", d => d.Close < d.Open  ? this.y(d.Close) - this.y(d.Open) :  this.y(d.Open) - this.y(d.Close))
+      .on('mouseover', this.tooltip.show)
+      .on('mouseout', this.tooltip.hide);
 
-      chart.selectAll(".bar")
-        .data(data)
-        .enter().append("rect")
-        .attr("class", d => {
-          return d.Open > d.Close ? "bar red" : "bar green"
-        })
-        .attr("x", function(d) {
-          return x(d.Date) - (width/data.length)/2;
-        })
-        .attr("y", function(d) {
-          return d.Close < d.Open  ? y(d.Open) : y(d.Close);
-        })
-        .attr("width", 0.5 * (width - 2)/data.length)
-        .attr("height", function(d) {
-          return d.Close < d.Open  ? y(d.Close) - y(d.Open) :  y(d.Open) - y(d.Close);
-        })
-        .on('mouseover', tip.show)
-        .on('mouseout', tip.hide);
+    bar.attr("class", d => d.Open > d.Close ? "bar red" : "bar green")
+      .attr("x", d => this.x(d.Date) - ((this.width - 2)/data.length)/4)
+      .attr("y", d => d.Close < d.Open  ? this.y(d.Open) : this.y(d.Close))
+      .attr("width", 0.5 * (this.width - 2)/data.length)
+      .attr("height", d => d.Close < d.Open  ? this.y(d.Close) - this.y(d.Open) :  this.y(d.Open) - this.y(d.Close));
 
-    });
+    bar.exit().remove();
+
+    // Update the Axis
+    var xAxis = d3.axisBottom(this.x).ticks(d3.timeDay.every(this.ticks)).tickFormat(d3.timeFormat("%d/%m/%Y"));
+    var yAxis = d3.axisLeft(this.y);
+
+    this.chart.selectAll(".yaxis")
+      .call(yAxis)
+      .selectAll("text")
+      .attr("dx", "-1em");
+
+    this.chart.selectAll(".xaxis")
+      .call(xAxis)
+      .selectAll("text")
+      .style("text-anchor", "end")
+      .attr("dx", "-.8em")
+      .attr("dy", ".15em")
+      .attr("transform", "rotate(-65)");
   }
 
   render() {
