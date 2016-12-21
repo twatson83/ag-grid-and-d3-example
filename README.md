@@ -23,7 +23,7 @@ The following frameworks and libraries were used.
 ![Image of candlestick chart created using D3](https://github.com/twatson83/ag-grid-and-d3-example/blob/master/images/candlestick.gif)
 
 ### Performance testing
-4000 rows, Updating prices of visible rows every 200ms.
+4000 rows. Updating prices of visible rows every 200ms.
 ![Image of prices randomly being updated every 200ms](https://github.com/twatson83/ag-grid-and-d3-example/blob/master/images/grid-perf-test.gif)
 
 Flamechart
